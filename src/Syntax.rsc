@@ -14,7 +14,7 @@ start syntax Form
 syntax Question
   = Str Id ":" Type 
   | Str Id ":" Type "=" Expr
-  | "if" "(" Expr ")" "{" Question* "}" ("else" "{" Question "}")?
+  | "if" "(" Expr ")" "{" Question* "}" ("else" "{" Question* "}")?  // if else with multiple statements
   | "{" Question "}" 
   ; 
 
@@ -37,8 +37,7 @@ syntax Expr
   ;
   
 syntax Type
-  = "integer"
-  | "boolean";  
+  = "integer" | "boolean";  
   
 lexical Str = "\"" ![\"]*  "\"";
 
