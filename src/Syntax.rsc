@@ -15,7 +15,7 @@ syntax Question
   = Str Id ":" Type 
   | Str Id ":" Type "=" Expr
   | "if" "(" Expr ")" "{" Question* "}" ("else" "{" Question* "}")?  // if else with multiple statements
-  | "{" Question "}" 
+  | "{" Question* "}"  // not sure this is needed although the TODO mentions it
   ; 
 
 // TODO: +, -, *, /, &&, ||, !, >, <, <=, >=, ==, !=, literals (bool, int, str)
