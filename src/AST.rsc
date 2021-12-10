@@ -14,7 +14,8 @@ data AForm(loc src = |tmp:///|)
 data AQuestion(loc src = |tmp:///|)
   = question(str q, AId id, AType t)
   | expr_question(str q, AId id, AType t, AExpr expr)
-  | if_question(AExpr guard, list[AQuestion] primary, list[AQuestion] secondary) 
+  | if_question(AExpr guard, list[AQuestion] primary)
+  | if_else_question(AExpr guard, list[AQuestion] primary, list[AQuestion] secondary) 
   | block_question(list[AQuestion] questions) //remember to remove this if it proves unwanted
   ; 
 
