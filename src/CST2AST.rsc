@@ -19,11 +19,8 @@ import Boolean; //needed for fromString
 
 AForm cst2ast(start[Form] sf) {
   Form f = sf.top; // remove layout before and after form
-  return cst2ast(f); 
+  return form("<f.form_id>", [cst2ast(question) | question <- f.questions], src=f@\loc); 
 }
-
-AForm cst2ast(frm: (Form) `form <Id idl> { <Question* questions> }`)
-  = form("<idl>", [ cst2ast(question) | Question question <- questions ], src=frm@\loc);
 
 AQuestion cst2ast(Question q) { //named idl instead of id for naming conflicts
   switch (q) {
@@ -44,7 +41,7 @@ AExpr cst2ast(Expr e) {
     case (Expr)`<Str x>`: return string(("<x>"), src = x@\loc);
     case (Expr)`<Int x>`: return integer(toInt("<x>"), src=x@\loc);
     case (Expr)`(<Expr x>)`: return cst2ast(x);
-    case (Expr)`!<Expr x>)`: return not(cst2ast(x), src=e@\loc);
+    case (Expr)`!<Expr x>`: return not(cst2ast(x), src=e@\loc);
     case (Expr)`<Expr lhs> * <Expr rhs>`: return mul(cst2ast(lhs), cst2ast(rhs), src=e@\loc);
     case (Expr)`<Expr lhs> / <Expr rhs>`: return div(cst2ast(lhs), cst2ast(rhs), src=e@\loc);
     case (Expr)`<Expr lhs> + <Expr rhs>`: return sum(cst2ast(lhs), cst2ast(rhs), src=e@\loc);
