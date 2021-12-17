@@ -30,15 +30,31 @@ Type type_converter(AType abstract_type){
 	}
 }
 
-// general check
-set[Message] check(AForm f) {
-  return check(f, collect(f), resolve(f).useDef);
-}
-
 //loc def, str name, str label, Type \type |remove later!|
 set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
-  set[Message] msgs;
+  set[Message] msgs = {};
+  set[str] defined = {};
+  rel[str name, Type t] defined_types = {};
+  set[str] used_labels = {};
   
+  for(/AQuestion question := f){
+  	msgs += check(question, tenv, useDef);
+  }
+  
+  for(<loc def, str name, str label, Type t> <- tenv){
+  	if(name in defined && <name, t> notin defined_types){
+  		msgs += {error("Ambiguous use of name in multiple questions", def)}; 
+  	} else {
+  		defined += {name};
+  		defined_types += {<name, t>};
+  	} 
+  	
+  	if(label in used_labels){
+  		msgs += {warning("Ambiguous use of label in multiple questions", def)};
+  	} else {
+  		used_labels += {label};
+  	}
+  }
   return msgs;
 }
 
