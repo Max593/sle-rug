@@ -26,9 +26,12 @@ RefGraph resolve(AForm f) = <us, ds, us o ds>
   when Use us := uses(f), Def ds := defs(f);
 
 Use uses(AForm f) {
-  return {}; 
+  // get all identifiers
+  return { <identifier.src, identifier.name> | /ref(AId identifier) := f}; 
 }
 
 Def defs(AForm f) {
-  return {}; 
+  // these are the two abstract syntaxes for questions that produce an identifier
+  return { <identifier.name, identifier.src> | /question(_, AId identifier, _) := f}
+  +{ <identifier.name, identifier.src> | /expr_question(_, AId identifier, _, _) := f} ;  
 }
