@@ -17,7 +17,17 @@ alias TEnv = rel[loc def, str name, str label, Type \type];
 // To avoid recursively traversing the form, use the `visit` construct
 // or deep match (e.g., `for (/question(...) := f) {...}` ) 
 TEnv collect(AForm f) {
-  return {}; 
+  return {<question.src, id.name, label, type_converter(abstract_type)>| /question:question(str label, AId id, AType abstract_type) := f} +
+  		 {<expr_question.src, id.name, label, type_converter(abstract_type)>| /expr_question:expr_question(str label, AId id, AType abstract_type, _):= f}; 
+}
+
+Type type_converter(AType abstract_type){
+	switch(abstract_type){
+		case integer(): return tint();
+		case boolean(): return tbool();
+		// yet to implement string
+		default: return tunknown();
+	}
 }
 
 set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
