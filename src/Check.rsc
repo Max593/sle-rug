@@ -17,8 +17,8 @@ alias TEnv = rel[loc def, str name, str label, Type \type];
 // To avoid recursively traversing the form, use the `visit` construct
 // or deep match (e.g., `for (/question(...) := f) {...}` ) 
 TEnv collect(AForm f) {
-  return {<question.src, id.name, label, type_converter(abstract_type)>| /question:question(str label, AId id, AType abstract_type) := f} +
-  		 {<expr_question.src, id.name, label, type_converter(abstract_type)>| /expr_question:expr_question(str label, AId id, AType abstract_type, _):= f}; 
+  return {<question.src, id.name, label, type_converter(abstract_type)> | /question:question(str label, AId id, AType abstract_type) := f} +
+  		 {<expr_question.src, id.name, label, type_converter(abstract_type)> | /expr_question:expr_question(str label, AId id, AType abstract_type, _):= f}; 
 }
 
 Type type_converter(AType abstract_type){
@@ -30,15 +30,48 @@ Type type_converter(AType abstract_type){
 	}
 }
 
+// general check
+set[Message] check(AForm f) {
+  return check(f, collect(f), resolve(f).useDef);
+}
+
+//loc def, str name, str label, Type \type |remove later!|
 set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
-  return {}; 
+  set[Message] msgs;
+  
+  return msgs;
 }
 
 // - produce an error if there are declared questions with the same name but different types.
 // - duplicate labels should trigger a warning 
 // - the declared type computed questions should match the type of the expression.
 set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
-  return {}; 
+  set[Message] msgs = {};
+  switch(q) {
+    case expr_question(str _, AId _, AType t, AExpr expr): {
+      if(check(expr, tenv, useDef) == {} && type_converter(t) != typeOf(expr, tenv, useDef)) {
+        msgs += {error("The Type of the question doesn\'t match the Type of the expression", q.src)};
+      } else {
+        msgs += check(expr, tenv, useDef);
+      }
+    }
+    case if_question(AExpr guard, list[AQuestion] _): {
+      if(check(guard, tenv, useDef) == {} && typeOf(guard, tenv, useDef) != tbool()) {
+        msgs += {error("The guard of the if statement is not of boolean Type", q.src)};
+      } else {
+        msgs += check(guard, tenv, useDef);
+      }
+    }
+    case if_else_question(AExpr guard, list[AQuestion] _, list[AQuestion] _): {
+      if(check(guard, tenv, useDef) == {} && typeOf(guard, tenv, useDef) != tbool()) {
+        msgs += {error("The guard of the if statement is not of boolean Type", q.src)};
+      } else {
+        msgs += check(guard, tenv, useDef);
+      }
+    }
+  }
+  
+  return msgs; 
 }
 
 // Check operand compatibility with operators.
@@ -50,8 +83,109 @@ set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
   switch (e) {
     case ref(AId x):
       msgs += { error("Undeclared question", x.src) | useDef[x.src] == {} };
-
-    // etc.
+    case not(AExpr expression): {
+      set[Message] tempError = check(expression, tenv, useDef);
+      if(tempError == {}) {
+        msgs += {error("Invalid type of argument for NOT", e.src) | typeOf(expression, tenv, useDef) != tbool()};
+      }
+      msgs += tempError;
+    }
+    case sum(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for SUM", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
+    case sub(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for SUB", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
+    case mul(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for MUL", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
+    case div(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for DIV", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
+    case strict_less(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for \<", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
+    case strict_greater(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for \>", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
+    case less_or_equal(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for \<=", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
+    case greater_or_equal(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for \>=", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
+    case is_equal(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for ==", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
+    case is_not_equal(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for !=", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
+    case and(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for AND", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
+    case or(AExpr lhs, AExpr rhs): {
+      set[Message] tempErrorLhs = check(lhs, tenv, useDef);
+      set[Message] tempErrorRhs = check(rhs, tenv, useDef);
+      if(tempErrorLhs == {} && tempErrorRhs == {}) {
+        msgs += {error("Invalid type of arguments for OR", e.src) | (typeOf(lhs, tenv, useDef) != tint() || typeOf(rhs, tenv, useDef) != tint())};
+      }
+      msgs += tempErrorLhs + tempErrorRhs;
+    }
   }
   
   return msgs; 
@@ -63,7 +197,22 @@ Type typeOf(AExpr e, TEnv tenv, UseDef useDef) {
       if (<u, loc d> <- useDef, <d, x, _, Type t> <- tenv) {
         return t;
       }
-    // etc.
+    case boolean(bool _): return tbool();
+    case integer(int _): return tint();
+    case string(str _): return tstr();
+    case not(AExpr _): return tbool();
+    case sum(AExpr _, AExpr _): return tint();
+    case sub(AExpr _, AExpr _): return tint();
+    case mul(AExpr _, AExpr _): return tint();
+    case div(AExpr _, AExpr _): return tint();
+    case strict_less(AExpr _, AExpr _): return tbool();
+    case strict_greater(AExpr _, AExpr _): return tbool();
+    case less_or_equal(AExpr _, AExpr _): return tbool();
+    case greater_or_equal(AExpr _, AExpr _): return tbool();
+    case is_equal(AExpr _, AExpr _): return tbool();
+    case is_not_equal(AExpr _, AExpr _): return tbool();
+    case and(AExpr _, AExpr _): return tbool();
+    case or(AExpr _, AExpr _): return tbool();
   }
   return tunknown(); 
 }
