@@ -42,7 +42,8 @@ data AExpr(loc src = |tmp:///|)
 data AId(loc src = |tmp:///|)
   = id(str name);
 
-data AType(loc src = |tmp:///|) //can types be strings?
-  = integer()
-  | boolean()
+data AType(loc src = |tmp:///|)
+  = intType()
+  | boolType()
+  | strType()
   ;

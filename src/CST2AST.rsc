@@ -37,9 +37,9 @@ AQuestion cst2ast(Question q) { //named idl instead of id for naming conflicts
 AExpr cst2ast(Expr e) {
   switch (e) {
     case (Expr)`<Id x>`: return ref(id("<x>", src=x@\loc), src=x@\loc);
-    case (Expr)`<Bool x>`: return boolean(fromString("<x>"), src=x@\loc);
-    case (Expr)`<Str x>`: return string(("<x>"), src = x@\loc);
-    case (Expr)`<Int x>`: return integer(toInt("<x>"), src=x@\loc);
+    case (Expr)`<Bool x>`: return boolean(fromString("<x>"), src=e@\loc);
+    case (Expr)`<Str x>`: return string(("<x>"), src = e@\loc);
+    case (Expr)`<Int x>`: return integer(toInt("<x>"), src=e@\loc);
     case (Expr)`(<Expr x>)`: return cst2ast(x);
     case (Expr)`!<Expr x>`: return not(cst2ast(x), src=e@\loc);
     case (Expr)`<Expr lhs> * <Expr rhs>`: return mul(cst2ast(lhs), cst2ast(rhs), src=e@\loc);
@@ -60,8 +60,9 @@ AExpr cst2ast(Expr e) {
 
 AType cst2ast(Type t) {
   switch(t) {
-    case (Type)`integer`: return integer(src=t@\loc);
-    case (Type)`boolean`: return boolean(src=t@\loc);
+    case (Type)`integer`: return intType(src=t@\loc);
+    case (Type)`boolean`: return boolType(src=t@\loc);
+    case (Type)`string` : return strType(src=t@\loc);
     default: throw "Incompatible type <t>";
   }
 }

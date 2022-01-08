@@ -12,20 +12,20 @@ data Type
   ;
 
 // the type environment consisting of defined questions in the form 
-alias TEnv = rel[loc def, str name, str label, Type \type];
+alias TEnv = rel[loc qdef, loc iddef, str name, str label, Type \type];
 
 // To avoid recursively traversing the form, use the `visit` construct
-// or deep match (e.g., `for (/question(...) := f) {...}` ) 
+// or deep match (e.g., `for (/question(...) := f) {...}` )
 TEnv collect(AForm f) {
-  return {<question.src, id.name, label, type_converter(abstract_type)> | /question:question(str label, AId id, AType abstract_type) := f} +
-  		 {<expr_question.src, id.name, label, type_converter(abstract_type)> | /expr_question:expr_question(str label, AId id, AType abstract_type, _):= f}; 
+  return {<question.src, id.src, id.name, label, type_converter(abstract_type)> | /question:question(str label, AId id, AType abstract_type) := f} +
+  		 {<expr_question.src, id.src, id.name, label, type_converter(abstract_type)> | /expr_question:expr_question(str label, AId id, AType abstract_type, _):= f}; 
 }
 
 Type type_converter(AType abstract_type){
 	switch(abstract_type){
-		case integer(): return tint();
-		case boolean(): return tbool();
-		// yet to implement string
+		case intType(): return tint();
+		case boolType(): return tbool();
+		case strType(): return tstr();
 		default: return tunknown();
 	}
 }
@@ -41,16 +41,16 @@ set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
   	msgs += check(question, tenv, useDef);
   }
   
-  for(<loc def, str name, str label, Type t> <- tenv){
+  for(<loc qdef, _, str name, str label, Type t> <- tenv) {
   	if(name in defined && <name, t> notin defined_types){
-  		msgs += {error("Ambiguous use of name in multiple questions", def)}; 
+  		msgs += {error("Ambiguous use of name in multiple questions", qdef)}; 
   	} else {
   		defined += {name};
   		defined_types += {<name, t>};
   	} 
   	
   	if(label in used_labels){
-  		msgs += {warning("Ambiguous use of label in multiple questions", def)};
+  		msgs += {warning("Ambiguous use of label in multiple questions", qdef)};
   	} else {
   		used_labels += {label};
   	}
@@ -209,10 +209,11 @@ set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
 
 Type typeOf(AExpr e, TEnv tenv, UseDef useDef) {
   switch (e) {
-    case ref(id(_, src = loc u)):  
-      if (<u, loc d> <- useDef, <d, x, _, Type t> <- tenv) {
+    case ref(id(_, src = loc u)): {
+      if (<u, loc d> <- useDef, <_, d, _, _, Type t> <- tenv) {
         return t;
       }
+    }
     case boolean(bool _): return tbool();
     case integer(int _): return tint();
     case string(str _): return tstr();
