@@ -24,7 +24,39 @@ void compile(AForm f) {
 }
 
 HTML5Node form2html(AForm f) {
-  return html();
+  // I found how to use the html bits here. Do not know if this is intended though, as I did not find it in the documentation.
+  // https://github.com/usethesource/rascal/blob/main/src/org/rascalmpl/library/lang/html5/DOM.rsc
+  return html(
+  				body(h1("<f.name>"), div([question2html(q)| q <- f.questions]))
+  			 );
+}
+
+HTML5Node question2html(question(str label, AId identifier, AType atype)){
+	switch(atype){
+		case intType(): return div(h5(label), input([\type("number")])); 
+		case boolType(): return div(h5(label), input([\type("checkbox")]));
+		case strType(): return div(h5(label), input([\type("text")]));
+	}
+}
+
+HTML5Node question2html(expr_question(str label, AId identifier, AType \atype, AExpr expr)){
+	switch(atype){
+		case intType(): return div(h5(label), input([\type("number"), readonly("readonly"), id("bla")])); 
+		case boolType(): return div(h5(label), input([\type("checkbox"), readonly("readonly")]));
+		case strType(): return div(h5(label), input([\type("text"), readonly("readonly")]));
+	}
+}
+
+HTML5Node question2html(if_question(AExpr guard, list[AQuestion] questions)){
+	return div(fieldset([question2html(question) | question <- questions]));
+}
+
+HTML5Node question2html(if_else_question(AExpr guard, list[AQuestion] true_questions, list[AQuestion] false_questions)){
+	return div(fieldset([question2html(question) | question <- true_questions]),fieldset([question2html(question) | question <- false_questions]));
+}
+
+HTML5Node question2html(question_block(list[AQuestion] questions)){
+	return div(fieldset([question2html(question) | question <- questions]));
 }
 
 str form2js(AForm f) {
