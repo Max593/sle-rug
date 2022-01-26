@@ -10,17 +10,15 @@ extend lang::std::Id;
 start syntax Form 
   = "form" Id form_id "{" Question* questions "}"; 
 
-// TODO: question, computed question, block, if-then-else, if-then
+// Syntax for question, computed question, block, if-then-else, if-then
 syntax Question
   = Str Id ":" Type 
   | Str Id ":" Type "=" Expr
   | "if" "(" Expr ")"  Question ("else"  Question )?  // if else with multiple statements
-  | "{" Question* "}"  // not sure this is needed although the TODO mentions it
+  | "{" Question* "}"  
   ; 
 
-// TODO: +, -, *, /, &&, ||, !, >, <, <=, >=, ==, !=, literals (bool, int, str)
-// Think about disambiguation using priorities and associativity
-// and use C/Java style precedence rules (look it up on the internet)
+// Syntax for Expressions in QL
 syntax Expr 
   = Id \ "true" \ "false" // true/false are reserved keywords.
   | Bool
@@ -35,16 +33,20 @@ syntax Expr
   > left Expr "&&" Expr
   > left Expr "||" Expr  
   ;
-  
+
+// Types accepted by QL
 syntax Type
   = "integer" | "boolean" | "string";  
-  
+ 
+// String lexical in QL
 lexical Str = "\"" ![\"]*  "\"";
 
+// Int lexical in QL
 lexical Int
   = "-"?[1-9][0-9]* 
   | "-"?[0];
 
+// Bool lexical in QL
 lexical Bool = "true" | "false";
 
 

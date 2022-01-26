@@ -11,12 +11,13 @@ data AForm(loc src = |tmp:///|)
   = form(str name, list[AQuestion] questions)
   ;
 
+// for questions we split the simple if(guard) question from the more complex one with the else.
 data AQuestion(loc src = |tmp:///|)
   = question(str q, AId id, AType t)
   | expr_question(str q, AId id, AType t, AExpr expr)
   | if_question(AExpr guard, list[AQuestion] primary)
   | if_else_question(AExpr guard, list[AQuestion] primary, list[AQuestion] secondary) 
-  | block_question(list[AQuestion] questions) //remember to remove this if it proves unwanted
+  | block_question(list[AQuestion] questions) 
   ; 
 
 data AExpr(loc src = |tmp:///|)
