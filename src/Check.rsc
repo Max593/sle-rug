@@ -12,10 +12,12 @@ data Type
   ;
 
 // the type environment consisting of defined questions in the form 
+// we extended this with the iddef(the identifier in the question) because we encountered trouble in retrieving the type of the identifier in question
 alias TEnv = rel[loc qdef, loc iddef, str name, str label, Type \type];
 
 // To avoid recursively traversing the form, use the `visit` construct
 // or deep match (e.g., `for (/question(...) := f) {...}` )
+// Adds every regular and computed question into the environment
 TEnv collect(AForm f) {
   return {<question.src, id.src, id.name, label, type_converter(abstract_type)> | /question:question(str label, AId id, AType abstract_type) := f} +
   		 {<expr_question.src, id.src, id.name, label, type_converter(abstract_type)> | /expr_question:expr_question(str label, AId id, AType abstract_type, _):= f}; 
@@ -30,7 +32,9 @@ Type type_converter(AType abstract_type){
 	}
 }
 
-//loc def, str name, str label, Type \type |remove later!|
+// checks for the following:
+// WARN: label used in multiple questions
+// ERROR: duplicate names with different times
 set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
   set[str] defined = {};
@@ -58,9 +62,9 @@ set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
   return msgs;
 }
 
-// - produce an error if there are declared questions with the same name but different types.
-// - duplicate labels should trigger a warning 
-// - the declared type computed questions should match the type of the expression.
+// checks for the following:
+// ERROR: expression type is not matched
+// ERROR: guard is not bool
 set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
   switch(q) {
@@ -90,9 +94,9 @@ set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
   return msgs; 
 }
 
-// Check operand compatibility with operators.
-// E.g. for an addition node add(lhs, rhs), 
-//   the requirement is that typeOf(lhs) == typeOf(rhs) == tint()
+// checks for the following:
+// ERROR: usage of an undeclared question
+// ERROR: generally using operands with unexpected types
 set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
   
@@ -207,6 +211,18 @@ set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
   return msgs; 
 }
 
+
+/* 
+ * Pattern-based dispatch style:
+ * 
+ * Type typeOf(ref(id(_, src = loc u)), TEnv tenv, UseDef useDef) = t
+ *   when <u, loc d> <- useDef, <d, x, _, Type t> <- tenv
+ *
+ * ... etc.
+ * 
+ * default Type typeOf(AExpr _, TEnv _, UseDef _) = tunknown();
+ *
+ */
 Type typeOf(AExpr e, TEnv tenv, UseDef useDef) {
   switch (e) {
     case ref(id(_, src = loc u)): {
@@ -234,17 +250,5 @@ Type typeOf(AExpr e, TEnv tenv, UseDef useDef) {
   return tunknown(); 
 }
 
-/* 
- * Pattern-based dispatch style:
- * 
- * Type typeOf(ref(id(_, src = loc u)), TEnv tenv, UseDef useDef) = t
- *   when <u, loc d> <- useDef, <d, x, _, Type t> <- tenv
- *
- * ... etc.
- * 
- * default Type typeOf(AExpr _, TEnv _, UseDef _) = tunknown();
- *
- */
- 
  
 

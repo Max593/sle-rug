@@ -35,7 +35,11 @@ AForm flatten(AForm f) {
   f.questions = flatten(f.questions, boolean(true));
   return f; 
 }
-
+// flattening of question -> if(true) question
+// flattening of expr question -> if(true) expr question
+// flattening of if question -> merge the guards together
+// flattening of if else question -> create two different ifstatements, one with merged guards and one with the not() of the first guard
+// flattening of block is just recursive
 list[AQuestion] flatten(list[AQuestion] questions, AExpr current_guard){
 	list[AQuestion] flattened_questions = [];
 	for(AQuestion primitive_question <- questions){
@@ -66,11 +70,11 @@ list[AQuestion] flatten(list[AQuestion] questions, AExpr current_guard){
    set[loc] toRename = {};
    if(useOrDef in r.defs<1>){
    	toRename += {useOrDef};
-   	toRename += {u | <loc u, useOrDef> <- r.useDef};
+   	toRename += {u | <loc u, useOrDef> <- r.useDef}; // all the usages have to be changed
    } else if (useOrDef in r.uses<0>){
    	if(<useOrDef, loc d> <- r.useDef){
-   		toRename += {d};
-   		toRename += {u | <loc u, d> <- r.useDef};
+   		toRename += {d}; // change def
+   		toRename += {u | <loc u, d> <- r.useDef}; // other usages have to be changed as well!
    	}
    }
    return visit(f){

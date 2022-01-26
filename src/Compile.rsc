@@ -18,6 +18,12 @@ import lang::html5::DOM; // see standard library
  * - if needed, use the name analysis to link uses to definitions
  */
 
+/*
+In order to recognize which checkbox/textbox needs editing, we do the following:
+-numberfields, textfields and checkboxes receive the id of id.name + "." + label
+-true guard statements receive the id of guard.src 
+-false guard statements receive the id of else.guard.src
+*/
 void compile(AForm f) {
   writeFile(f.src[extension="js"].top, form2js(f));
   writeFile(f.src[extension="html"].top, toString(form2html(f)));
@@ -32,6 +38,7 @@ HTML5Node form2html(AForm f) {
   			 );
 }
 
+//html of question
 HTML5Node question2html(question(str label, AId identifier, AType atype)){
 	switch(atype){
 		case intType(): return div(h5(label), input([\type("number"), id(identifier.name + "." + label[1..-1]), oninput("updateEntry(this.id)")])); 
@@ -40,6 +47,7 @@ HTML5Node question2html(question(str label, AId identifier, AType atype)){
 	}
 }
 
+//html of expr question
 HTML5Node question2html(expr_question(str label, AId identifier, AType \atype, AExpr expr)){
 	switch(atype){
 		case intType(): return div(h5(label), input([\type("number"), readonly("readonly"), id(identifier.name + "." + label[1..-1])])); 
@@ -48,14 +56,17 @@ HTML5Node question2html(expr_question(str label, AId identifier, AType \atype, A
 	}
 }
 
+//html of if 
 HTML5Node question2html(if_question(AExpr guard, list[AQuestion] questions)){
 	return div(fieldset([question2html(question) | question <- questions]), id(guard.src));
 }
 
+// html of if else
 HTML5Node question2html(if_else_question(AExpr guard, list[AQuestion] true_questions, list[AQuestion] false_questions)){
 	return div(div(fieldset([question2html(question) | question <- true_questions]), id(guard.src)),div(fieldset([question2html(question) | question <- false_questions]), id("else.<guard.src>")));
 }
 
+// html of block question
 HTML5Node question2html(question_block(list[AQuestion] questions)){
 	return div(fieldset([question2html(question) | question <- questions]));
 }
@@ -138,6 +149,7 @@ str genInitUpdateRoutine(str label, AId id, AType t) {
     return res;
 }
 
+// Update function for HTML
 str genUpdate(AForm f) {
     str res = "
 function updateEntry(id) {
@@ -159,6 +171,7 @@ function updateEntry(id) {
     return res;
 }
 
+// Translates questions into json
 str questions2js(list[AQuestion] questions) {
     str res = "";
     for(AQuestion q <- questions) {
@@ -210,6 +223,7 @@ str questions2js(list[AQuestion] questions) {
     return res;
 }
 
+// Translates expressions into json
 str expr2js(AExpr expr) {
     str res = "";
     switch(expr) {
