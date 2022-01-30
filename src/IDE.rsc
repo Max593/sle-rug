@@ -37,9 +37,10 @@ void main() {
         AForm ast = cst2ast(pt);
         UseDef useDef = resolve(ast).useDef;
         set[Message] msgs = check(ast, collect(ast), useDef);
-        if (msgs == {}) {
-          compile(ast);
-        }
+        bool canCompile = true;
+ 		for(msg <- msgs)
+ 			if(error(_, _) := msg) canCompile = false;
+ 		if(canCompile) compile(ast);
         return msgs;
       }
       return {error("Not a form", t@\loc)};
